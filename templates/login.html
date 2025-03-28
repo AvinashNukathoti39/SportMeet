@@ -363,6 +363,7 @@
                     <form id="user-form" method="POST" action="{% url 'SportMeetApp:login' %}">
                         {% csrf_token %}
                         <!-- Email Input -->
+                        <input type="hidden" name="next" value="{{ next }}" />
                         <input type="email" name="email" placeholder="Email" required>
                         <!-- Password Input -->
                         <div class="password-container">

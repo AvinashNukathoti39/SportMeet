@@ -187,54 +187,100 @@ class VenueOwnerRegisterView(generics.CreateAPIView):
 
 
 
+# def user_login(request):
+#     if request.method == "POST":
+#         email = request.POST.get('email')  # Get email from the form
+#         password = request.POST.get('password')  # Get password from the form
+
+#         # Check if a user with the provided email exists
+#         try:
+#             user = User.objects.get(email=email)  # Fetch user by email
+#         except User.DoesNotExist:
+#             messages.error(request, "User with this email does not exist.")
+#             return redirect("SportMeetApp:login")  # Redirect back to the login page
+
+#         # Authenticate the user
+#         user = authenticate(request, username=user.username, password=password)
+
+#         if user is not None:
+#             # Check if the user is a venue owner
+#             try:
+#                 venue_owner_profile = VenueOwnerProfile.objects.get(user=user)
+#                 if not venue_owner_profile.is_approved:
+#                     # If not approved, show a message
+#                     messages.info(request, "Your account is pending approval.")
+#                     return redirect("SportMeetApp:approval")  # Redirect to the approval page
+#                 else:
+#                     # If approved, redirect to the dashboard
+#                     login(request, user)
+#                     group = Group.objects.get(name='owner')
+#                     user.groups.add(group)
+#                     return redirect(reverse('admin:index'))  # Redirect to the dashboard page
+#             except VenueOwnerProfile.DoesNotExist:
+#                 # If the user is not a venue owner, check if they are a customer
+#                 try:
+#                     customer_profile = CustomerProfile.objects.get(user=user)
+#                     # If the user is a customer, redirect to the home page
+#                     login(request, user)
+#                     group = Group.objects.get(name='customer')
+#                     user.groups.add(group)
+#                     return redirect("SportMeetApp:home")  # Redirect to the home page
+#                 except CustomerProfile.DoesNotExist:
+#                     # If the user is neither a venue owner nor a customer, handle accordingly
+#                     messages.error(request, "User profile not found.")
+#                     return redirect("SportMeetApp:login")  # Redirect back to the login page
+#         else:
+#             messages.error(request, "Invalid credentials.")
+#             return redirect("SportMeetApp:login")  # Redirect back to the login page
+
+#     return render(request, "login.html")
+
+
 
 def user_login(request):
     if request.method == "POST":
-        email = request.POST.get('email')  # Get email from the form
-        password = request.POST.get('password')  # Get password from the form
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        next_url = request.POST.get('next', '')  # Get the 'next' URL from the form
 
-        # Check if a user with the provided email exists
         try:
-            user = User.objects.get(email=email)  # Fetch user by email
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             messages.error(request, "User with this email does not exist.")
-            return redirect("SportMeetApp:login")  # Redirect back to the login page
+            return redirect("SportMeetApp:login")
 
-        # Authenticate the user
         user = authenticate(request, username=user.username, password=password)
 
         if user is not None:
-            # Check if the user is a venue owner
             try:
                 venue_owner_profile = VenueOwnerProfile.objects.get(user=user)
                 if not venue_owner_profile.is_approved:
-                    # If not approved, show a message
                     messages.info(request, "Your account is pending approval.")
-                    return redirect("SportMeetApp:approval")  # Redirect to the approval page
+                    return redirect("SportMeetApp:approval")
                 else:
-                    # If approved, redirect to the dashboard
                     login(request, user)
                     group = Group.objects.get(name='owner')
                     user.groups.add(group)
-                    return redirect(reverse('admin:index'))  # Redirect to the dashboard page
+                    # Redirect to 'next' if it exists, otherwise to admin dashboard
+                    return redirect(next_url if next_url else reverse('admin:index'))
             except VenueOwnerProfile.DoesNotExist:
-                # If the user is not a venue owner, check if they are a customer
                 try:
                     customer_profile = CustomerProfile.objects.get(user=user)
-                    # If the user is a customer, redirect to the home page
                     login(request, user)
                     group = Group.objects.get(name='customer')
                     user.groups.add(group)
-                    return redirect("SportMeetApp:home")  # Redirect to the home page
+                    # Redirect to 'next' if it exists, otherwise to home
+                    return redirect(next_url if next_url else "SportMeetApp:home")
                 except CustomerProfile.DoesNotExist:
-                    # If the user is neither a venue owner nor a customer, handle accordingly
                     messages.error(request, "User profile not found.")
-                    return redirect("SportMeetApp:login")  # Redirect back to the login page
+                    return redirect("SportMeetApp:login")
         else:
             messages.error(request, "Invalid credentials.")
-            return redirect("SportMeetApp:login")  # Redirect back to the login page
+            return redirect("SportMeetApp:login")
 
-    return render(request, "login.html")
+    # Pass 'next' from the URL to the template (e.g., /login/?next=/booking/123/)
+    next_url = request.GET.get('next', '')
+    return render(request, "login.html", {'next': next_url})
 
 
 def customer_dashboard(request):
