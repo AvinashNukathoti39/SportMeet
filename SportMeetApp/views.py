@@ -620,7 +620,7 @@ def get_messaged_customers(request):
 
 
 
-@login_required
+@login_required(login_url='/login/')
 def booking_view(request, venue_id):
     venue = get_object_or_404(Venue, id=venue_id)
     discount = Discount.objects.filter(venue=venue).first()
