@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Venue Location</title>
+    <script>
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        document.getElementById("latitude").value = position.coords.latitude;
+                        document.getElementById("longitude").value = position.coords.longitude;
+                    },
+                    function (error) {
+                        alert("Error getting location: " + error.message);
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        function saveLocation(event) {
+            event.preventDefault(); // Prevent reload
+
+            let lat = document.getElementById("latitude").value;
+            let lon = document.getElementById("longitude").value;
+            let venueId = "{{ venue.id }}";
+
+            if (!lat || !lon) {
+                alert("Please get the location first!");
+                return;
+            }
+
+            fetch(`/venue/${venueId}/save-location/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: `latitude=${lat}&longitude=${lon}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert("Location updated successfully!");
+                    window.close(); // Close after saving
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                alert("Network error: " + error);
+            });
+        }
+    </script>
+</head>
+<body>
+    <h2>Set Location for {{ venue.name }}</h2>
+    <button onclick="getLocation()">📍 Locate Me</button>
+    <br><br>
+    <form onsubmit="saveLocation(event)">
+        <label>Latitude: </label>
+        <input type="text" id="latitude" value="{{ venue.latitude }}" readonly>
+        <br>
+        <label>Longitude: </label>
+        <input type="text" id="longitude" value="{{ venue.longitude }}" readonly>
+        <br><br>
+        <button type="submit">✅ Save Location</button>
+    </form>
+</body>
+</html>

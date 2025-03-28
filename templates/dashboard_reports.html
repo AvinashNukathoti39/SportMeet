@@ -1,0 +1,237 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .report-card {
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .report-table th {
+        background-color: #43A047;
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+    .report-table td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+    .report-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .filter-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    .report-section {
+        margin-bottom: 40px;
+    }
+    .report-title {
+        color: #43A047;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #43A047;
+    }
+    .no-data {
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        font-style: italic;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+    .month-picker {
+        max-width: 200px;
+    }
+    .position-badge {
+        background-color: #43A047;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <h2 class="mb-4">Monthly Reports Dashboard</h2>
+    
+    <!-- Filter Section -->
+    <div class="filter-container">
+        <form method="get" action="" id="report-filters">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label for="month-select" class="form-label">Select Month</label>
+                    <input type="month" 
+                           name="month" 
+                           id="month-select" 
+                           class="form-control month-picker"
+                           value="{{ selected_month }}"
+                           max="{{ current_month }}">
+                </div>
+                {% if request.user.is_superuser %}
+                <div class="col-md-4">
+                    <label for="venue-select" class="form-label">Filter by Venue</label>
+                    <select name="venue_id" id="venue-select" class="form-select">
+                        <option value="">All Venues</option>
+                        {% for venue in venues %}
+                        <option value="{{ venue.id }}" {% if venue.id == selected_venue %}selected{% endif %}>{{ venue.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Revenue Generating Venues -->
+    <div class="report-section">
+        <h3 class="report-title">
+            <i class="material-icons me-2"></i>
+            Top Performing Venues ({{ selected_month }})
+        </h3>
+        <div class="card report-card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Position</th>
+                                <th>Venue</th>
+                                <th>Bookings</th>
+                                <th>Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if revenue_data %}
+                                {% for item in revenue_data %}
+                                <tr>
+                                    <td><span class="position-badge">{{ forloop.counter }}</span></td>
+                                    <td>{{ item.venue__name }}</td>
+                                    <td>{{ item.booking_count|default:0 }}</td>
+                                    <td>${{ item.total_revenue|default:0|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="no-data">No revenue data available for selected month</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Popular Timeslots -->
+    <div class="report-section">
+        <h3 class="report-title">
+            <i class="material-icons me-2"></i>
+            Daily Most Popular Timeslots ({{ selected_month }})
+        </h3>
+        <div class="card report-card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Most Popular Timeslot</th>
+                                <th>Venue</th>
+                                <th>Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if daily_timeslots %}
+                                {% for item in daily_timeslots %}
+                                <tr>
+                                    <td>{{ item.date|date:"Y-m-d" }}</td>
+                                    <td>{{ item.timeslot }}</td>
+                                    <td>{{ item.venue }}</td>
+                                    <td>{{ item.count|default:0 }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="no-data">No timeslot data available for selected month</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Popular Sports -->
+    <div class="report-section">
+        <h3 class="report-title">
+            <i class="material-icons me-2"></i>
+            Daily Most Popular Sports ({{ selected_month }})
+        </h3>
+        <div class="card report-card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Most Popular Sport</th>
+                                <th>Venue</th>
+                                <th>Bookings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if daily_sports %}
+                                {% for item in daily_sports %}
+                                <tr>
+                                    <td>{{ item.date|date:"Y-m-d" }}</td>
+                                    <td>{{ item.sport }}</td>
+                                    <td>{{ item.venue }}</td>
+                                    <td>{{ item.count|default:0 }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="no-data">No sport data available for selected month</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit when filters change
+    document.getElementById('month-select').addEventListener('change', function() {
+        document.getElementById('report-filters').submit();
+    });
+    
+    document.getElementById('venue-select').addEventListener('change', function() {
+        document.getElementById('report-filters').submit();
+    });
+});
+</script>
+{% endblock %}
